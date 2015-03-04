@@ -26,21 +26,6 @@ function cleaned_data()
     return train_data, test_data
 end
 
-function load_spam_data()
-    df = readtable("../data/spam.data", separator=' ', header=false, skipstart=0)
-    df = df[:,2:end]
-    return df
-end
-
-function cleaned_spam_data()
-    # Load and standardize the data, then split into train and test examples
-    df = load_spam_data()
-    standardized_data = copy(df)
-    standardized_data[1:end - 1] = DataFramesUtil.standardize!(df[1:end - 1])
-
-    return standardized_data
-end
-
 function table_3_1()
     df = load_data()
     df = df[1:9]
