@@ -27,6 +27,37 @@ def standardize(df, cols=None):
     return (df_subset - df_subset.mean())/df_subset.std()
 
 
+def all_subsets_k(X, Y, k):
+    """Takes the given data and performs regressions over all subsets of the
+    predictors containing k variables
+    """
+    N = X.shape[0]
+    p = X.shape[1]
+    assert(0 <= k and k <= p)
+    results = []
+
+    if k == 0:
+        # Perform the k=0 regression
+        const = np.ones(N)
+        est = sm.OLS(Y, const).fit()
+        rss = sum(est.resid.pow(2))
+        results.append(((), rss))
+    else:
+        for subset in itertools.combinations(xrange(p), k):
+            est = sm.OLS(Y, sm.add_constant(X.values[:, subset])).fit()
+            rss = sum(est.resid.pow(2))
+            results.append((subset, rss))
+    return results
+
+
+def best_subset_k(X, Y, k):
+    """Returns the best set of indices of size k and RSS when performing OLS
+    over those predictors
+    """
+
+    return min(all_subsets_k(X, Y, k), key=lambda x: x[1])
+
+
 def all_subsets(X, Y):
     """ Takes the given data and performs regressions over all subsets of
     predictors
@@ -37,24 +68,14 @@ def all_subsets(X, Y):
     Y -- Response
     """
 
-    N = X.shape[0]
     p = X.shape[1]
     results = []
 
-    # Perform the k=0 regression
-    const = np.ones(N)
-    est = sm.OLS(Y, const).fit()
-    rss = sum(est.resid.pow(2))
-    results.append(((), rss))
-
-    # Run all regressions for subset size k>0
-    for k in xrange(p):
-        for subset in itertools.combinations(xrange(p), k + 1):
-            est = sm.OLS(Y, sm.add_constant(X.values[:, subset])).fit()
-            rss = sum(est.resid.pow(2))
-            results.append((subset, rss))
+    for k in xrange(p + 1):
+        results.extend(all_subsets_k(X, Y, k))
 
     return results
+
 
 def ridge_regression(X, Y, Lambda):
     """ Takes the given data and performs ridge regression parameterized by the
