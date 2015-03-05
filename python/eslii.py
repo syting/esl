@@ -4,13 +4,9 @@ import pandas
 
 DATA_DIR = "../data"
 PROSTATE_DATA = "prostate.data"
-
-
-def read_prostate_data():
-    """Reads the prostate data from file into a DataFrame
-    """
-    return pandas.read_table(DATA_DIR + '/' + PROSTATE_DATA,
-                             delim_whitespace=True)
+VOWELS_TRAIN = "vowels.train"
+VOWELS_TEST = "vowels.test"
+SA_HEART_DATA = "SAheart.data"
 
 
 def standardize_data(df, demeanCols=None, scaleCols=None):
@@ -25,4 +21,28 @@ def standardize_data(df, demeanCols=None, scaleCols=None):
 
     df[demeanCols] -= df[demeanCols].mean()
     df[scaleCols] /= df[scaleCols].std()
+    return df
+
+
+def read_prostate_data():
+    """Reads the prostate data from file into a DataFrame
+    """
+    return pandas.read_table(DATA_DIR + '/' + PROSTATE_DATA,
+                             delim_whitespace=True)
+
+
+def read_vowel_data(train=True):
+    """Reads the vowel data from file into a DataFrame
+    """
+    data_file = DATA_DIR + '/' + (VOWELS_TRAIN if train else VOWELS_TEST)
+    df = pandas.read_table(data_file, sep=',', header=0)
+    df.drop(u"row.names", axis=1, inplace=True)
+    return df
+
+
+def read_sa_heart_data():
+    """Reads the south african heart data from file in a DataFrame
+    """
+    df = pandas.read_table(DATA_DIR + '/' + SA_HEART_DATA, sep=',', header=0)
+    df.drop(u"row.names", axis=1, inplace=True)
     return df
