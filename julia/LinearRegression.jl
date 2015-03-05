@@ -51,14 +51,22 @@ function lar(X, y)
     inactive_set = [j for j in 1:size(pred)[2]]
     splice!(inactive_set, first_pred)
     beta = [0.0]
+
+    # Repeatedly add variables to active set when their covariance with the residual matches that of
+    # the active variables
     while 0 < length(inactive_set)
-        delta = (pred[:,active_set]'*pred[:,active_set])^-1*pred[:,active_set]'*r
-        rh = pred[:,active_set]*delta
-        l = cov(pred[:, active_set[1]], r, corrected=false)
+        delta = (pred[:,active_set]'*pred[:,active_set])^-1*pred[:,active_set]'*r # Current direction
+        rh = pred[:,active_set]*delta # Fitted residuals
+        l = cov(pred[:, active_set[1]], r, corrected=false) # Current covariance
+
+        # Find the distance to travel along delta until an inactive variable has equal correlation with the 
+        # residual with the active variables
         alphas = [min((l - cov(pred[:,j], r, corrected=false))/(l - cov(pred[:,j], rh, corrected=false)),
                       (l + cov(pred[:,j], r, corrected=false))/(l + cov(pred[:,j], rh, corrected=false))) for j in inactive_set]
         alpha_ind = indmin(alphas)
         alpha = alphas[alpha_ind]
+
+        # Update beta, our active/inactive sets, and the residual
         beta = [beta; 0.0] + alpha*[delta; 0.0]
         push!(active_set, inactive_set[alpha_ind])
         splice!(inactive_set, alpha_ind)
