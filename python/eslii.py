@@ -7,6 +7,8 @@ PROSTATE_DATA = "prostate.data"
 VOWELS_TRAIN = "vowels.train"
 VOWELS_TEST = "vowels.test"
 SA_HEART_DATA = "SAheart.data"
+PHONEME_DATA = "phoneme.data"
+BONE_DATA = "bone.data"
 
 
 def standardize_data(df, demeanCols=None, scaleCols=None):
@@ -46,3 +48,18 @@ def read_sa_heart_data():
     df = pandas.read_table(DATA_DIR + '/' + SA_HEART_DATA, sep=',', header=0)
     df.drop(u"row.names", axis=1, inplace=True)
     return df
+
+
+def read_phoneme_data():
+    """Reads the phoneme data from file in a DataFrame
+    """
+    df = pandas.read_table(DATA_DIR + '/' + PHONEME_DATA, sep=',', header=0)
+    df.drop(u"row.names", axis=1, inplace=True)
+    return df
+
+
+def read_bone_data():
+    """Reads the prostate data from file into a DataFrame
+    """
+    return pandas.read_table(DATA_DIR + '/' + BONE_DATA,
+                             delim_whitespace=True)
