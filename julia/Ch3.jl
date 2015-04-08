@@ -1,10 +1,11 @@
 module Ch3
 
 using DataFrames, DataFramesUtil
+using ESLii
 using Gadfly
-using GLM
+#using GLM
 using LinearRegression
-using MLBase
+#using MLBase
 using MultivariateStats
 using Roots
 
