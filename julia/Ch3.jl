@@ -3,43 +3,28 @@ module Ch3
 using DataFrames, DataFramesUtil
 using ESLii
 using Gadfly
-#using GLM
+using GLM
 using LinearRegression
-#using MLBase
+using MLBase
 using MultivariateStats
 using Roots
 
-function load_data()
-    df = readtable("../data/prostate.data", separator=' ', header=false, skipstart=1)
-    df = df[:,2:end]
-    rename!(df, names(df), [:lcavol, :lweight, :age, :lbph, :sci, :lcp, :gleason, :ppg45, :lpsa, :train])
-    return df
-end
-
-function cleaned_data()
-    # Load and standardize the data, then split into train and test examples
-    df = load_data()
-    standardized_data = copy(df)
-    standardized_data[1:8] = DataFramesUtil.standardize!(df[1:8])
-    train_data = standardized_data[standardized_data[:train] .== true,:][1:end - 1]
-    test_data = standardized_data[standardized_data[:train] .== false,:][1:end - 1]
-
-    return train_data, test_data
-end
-
 function table_3_1()
-    df = load_data()
-    df = df[1:9]
+    # Reproduces Table 3.1, returning the result as a DataFrame
+    df = ESLii.read_prostate_data(true, false)[1:end - 1]
     cor(df)
 end
 
 function table_3_2()
-    train_data, test_data = cleaned_data()
-    model = lm(lpsa~lcavol+lweight+age+lbph+sci+lcp+gleason+ppg45, train_data)
+    # Reproduces Table 3.2 in ESLii summarizing the results of an OLS regression on the prostate data
+    train_data = ESLii.read_prostate_data()
+    model = lm(lpsa~lcavol+lweight+age+lbph+svi+lcp+gleason+pgg45, train_data)
 end
 
 function figure_3_5()
-    train_data, test_data = cleaned_data()
+    # Reproduces Figure 3.5 in ESLii displaying the RSS error of regressions over all subsets of predictors
+    # for the prostate data
+    train_data = ESLii.read_prostate_data()
     all_regressions = map(x -> (length(x[1]), x[2]), LinearRegression.all_subsets_regression(train_data, :lpsa))
     Gadfly.plot(layer(x=map(x -> x[1], all_regressions), y=map(x -> x[2], all_regressions), Geom.point),
                 layer(x=0:(size(train_data)[2] - 1), y=map(k -> LinearRegression.best_k_subset(k, all_regressions)[2], 0:(size(train_data)[2] - 1)), Geom.line, Theme(default_color=color("red"))),
@@ -61,7 +46,9 @@ function lambda_ridge(X, multiple=1)
 end
 
 function figure_3_7_ridge()
-    train_data, test_data = cleaned_data()
+    # Reproduces part of figure 3.7 displaying the results of 10-fold cross-validation
+    # on ridge regression over the prostate data
+    train_data = ESLii.read_prostate_data()
     mf = ModelFrame(Formula(names(train_data)[end], Expr(:call, :+, names(train_data)[1:end-1])), train_data)
     X = ModelMatrix(mf).m[:,2:end]
     N = size(X)[1]
@@ -83,7 +70,9 @@ function figure_3_7_ridge()
 end
 
 function figure_3_7_pcr()
-    train_data, test_data = cleaned_data()
+    # Reproduces part of figure 3.7 displaying the results of 10-fold cross-validation
+    # on principle component regression over the prostate data
+    train_data = ESLii.read_prostate_data()
     mf = ModelFrame(Formula(names(train_data)[end], Expr(:call, :+, names(train_data)[1:end-1])), train_data)
     X = ModelMatrix(mf).m[:,2:end]
     N = size(X)[1]
@@ -104,7 +93,9 @@ function figure_3_7_pcr()
 end
 
 function figure_3_7_pls()
-    train_data, test_data = cleaned_data()
+    # Reproduces part of figure 3.7 displaying the results of 10-fold cross-validation
+    # on partial least squares regression over the prostate data
+    train_data = ESLii.read_prostate_data()
     mf = ModelFrame(Formula(names(train_data)[end], Expr(:call, :+, names(train_data)[1:end-1])), train_data)
     X = ModelMatrix(mf).m[:,2:end]
     N = size(X)[1]
@@ -123,6 +114,5 @@ function figure_3_7_pls()
                 layer(x=0:size(X)[2], ymin=(means - .5*stds), ymax=(means + .5*stds), Geom.errorbar),
                 Guide.xlabel("Degrees of Freedom"), Guide.ylabel("CV Error"), Guide.title("PLS"))
 end
-
 
 end

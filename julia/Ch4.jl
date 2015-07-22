@@ -5,11 +5,11 @@ using DataFrames, DataFramesUtil
 using ESLii
 using Gadfly
 
-function figure_4_4()
-    trainX, trainY = ESLii.load_data("../data/vowels.data", ',', true, :y, true, [:row_names])
+function figure_4_4_and_4_8(i, j)
+    trainX, trainY = ESLii.read_vowel_data()
     rrlda = fit(Classification.RRLDAClassifier, trainX, trainY, 10)
     Z = trainX*rrlda.V
-    Gadfly.plot(x=Z[:,1], y=Z[:,7], color=trainY, Geom.point)
+    Gadfly.plot(x=Z[:, i], y=Z[:, j], color=trainY, Geom.point)
 end
 
 function figure_4_10()

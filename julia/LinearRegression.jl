@@ -1,6 +1,6 @@
 module LinearRegression
 
-using DataFrames, GLM, LBP, NumericExtensions
+using DataFrames, GLM, LBP
 
 """Performs leaps and bounds regression on the given DataFrame returning a dictionary
 keyed by subset size with values containing the optimal index set at that size
@@ -14,6 +14,7 @@ function lbp(df::DataFrame)
     return LBP.lbpRegress(adjX, Y)
 end
 
+sumsq(X) = (X'*X)[1]
 
 """Performs all subsets regression on the given DataFrame D with column indexed
 y containing the response

@@ -44,7 +44,8 @@ end
 
 function StatsBase.fit(::Type{LDAClassifier}, X::Matrix, y::Vector)
     n = size(y)[1]
-    n_cats = unique(length(y))
+    cats = unique(y)
+    n_cats = length(cats)
     priors = [1.0*count(k -> k == i, y)/n for i in 1:n_cats]
     centers = zeros(size(X)[2], n_cats); 
     for i in 1:n_cats

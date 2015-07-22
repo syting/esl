@@ -2,22 +2,9 @@ module Ch5
 
 using Classification
 using DataFrames, DataFramesUtil
+using ESLii
 using Gadfly
 using Splines
-
-function load_data(fileName::String, separator::Char, header::Bool, response::Symbol, standardize=false, ignoreCols=Symbol[], classCols=Symbol[])
-    df = readtable(fileName, separator=separator, header=header)
-    X = df[filter(x -> !(x in ignoreCols) && x != response, names(df))]
-    for col in classCols
-        X[col] = pool(X[col]).refs - 1
-    end
-    if (standardize)
-        X = DataFramesUtil.standardize!(X)
-    end
-    y = df[response]
-
-    return convert(Matrix{Float64}, X), convert(Vector{Int64}, y)
-end
 
 function pv(X)
     cv = (X'*X)^-1
@@ -53,7 +40,7 @@ function quantiles(X, n)
 end
 
 function figure_5_4()
-    X, y = load_data("../data/SAheart.data", ',', true, :chd, false, [:row_names, :adiposity, :typea], [:famhist])
+    X, y = ESLii.load_data("../data/SAheart.data", ',', true, :chd, false, [:row_names, :adiposity, :typea], [:famhist])
     N1 = Splines.ns(X[:,1], quartiles(X[:,1]), false)
     N2 = Splines.ns(X[:,2], quartiles(X[:,2]), false)
     N3 = Splines.ns(X[:,3], quartiles(X[:,3]), false)
@@ -72,6 +59,22 @@ function figure_5_4()
     Gadfly.plot(x=X[:, 4], y=N[:, 13]*llc.beta[14], Geom.line)
     Gadfly.plot(x=X[:, 5], y=N[:, 14:17]*llc.beta[15:18], Geom.line)
     Gadfly.plot(x=X[:, 7], y=N[:, 18:end]*llc.beta[19:end], Geom.line)
+end
+
+function figure_5_5()
+    phoneme = readtable("../data/phoneme.data", separator=',', header=true)
+    aa = phoneme[phoneme[:g] .== "aa", :]
+    aa_train = aa[convert(Array{Bool}, map(x -> contains(x, "train"), aa[:speaker])), :]
+    aa_test = aa[convert(Array{Bool}, map(x -> contains(x, "test"), aa[:speaker])), :]
+    ao = phoneme[phoneme[:g] .== "ao", :]
+    ao_train = ao[convert(Array{Bool}, map(x -> contains(x, "train"), ao[:speaker])), :]
+    ao_test = ao[convert(Array{Bool}, map(x -> contains(x, "test"), ao[:speaker])), :]
+
+    # Print some examples of the data
+    for i in 1:15
+        Gadfly.plot(x=1:256, y=aa_train[i, 1:256])
+        Gadfly.plot(x=1:256, y=ao_train[i, 1:256])
+    end
 end
 
 end

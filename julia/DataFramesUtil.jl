@@ -11,7 +11,7 @@ function Base.convert{T<:Number}(::Type{Array{T,2}}, df::DataFrame)
 end
 
 function Base.cor(df::DataFrame)
-    DataFrame(cor(convert(Matrix{Float64}, df)), names(df))
+    cor(convert(Matrix{Float64}, df)), names(df)
 end
 
 function standardize!(df::DataFrame, center=true, scale=true)
