@@ -113,12 +113,14 @@ function figure_5_6()
     male_bone = sort(bone[bone[:gender] .== "male", :], cols=:age)
     female_bone = sort(bone[bone[:gender] .== "female", :], cols=:age)
 
-    male_N = Splines.ns(male_bone[:age], Splines.quantiles(male_bone[:age], 12), true)
-    male_omega = Splines.calc_omega(Splines.quantiles(male_bone[:age], 12))
-    male_theta = (male_N'*male_N + .00022*male_omega)^-1*male_N'*male_bone[:spnbmd]
-    female_N = Splines.ns(female_bone[:age], Splines.quantiles(female_bone[:age], 12), true)
-    female_omega = Splines.calc_omega(Splines.quantiles(female_bone[:age], 12))
-    female_theta = (female_N'*female_N + .00022*female_omega)^-1*female_N'*female_bone[:spnbmd]
+    #male_N = Splines.ns(male_bone[:age], Splines.quantiles(male_bone[:age], 12), true)
+    #male_omega = Splines.calc_omega(Splines.quantiles(male_bone[:age], 12))
+    #male_theta = (male_N'*male_N + .00022*male_omega)^-1*male_N'*male_bone[:spnbmd]
+    #female_N = Splines.ns(female_bone[:age], Splines.quantiles(female_bone[:age], 12), true)
+    #female_omega = Splines.calc_omega(Splines.quantiles(female_bone[:age], 12))
+    #female_theta = (female_N'*female_N + .00022*female_omega)^-1*female_N'*female_bone[:spnbmd]
+    male_N, male_theta = Splines.smooth_spline(male_bone[:age], male_bone[:spnbmd], .00022, 10)
+    female_N, female_theta = Splines.smooth_spline(female_bone[:age], female_bone[:spnbmd], .00022, 10)
 
     #Gadfly.plot(layer(x=male_bone[:age], y=male_bone[:spnbmd], Geom.point, Theme(default_color=color("blue"))),
     Gadfly.plot(layer(x=male_bone[:age], y=male_N*male_theta, Geom.line, Theme(default_color=color("blue"))),

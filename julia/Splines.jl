@@ -25,7 +25,7 @@ end
 # Generates n-quantiles of the data in X
 function quantiles(X, n)
     sorted_X = sort(X)
-    return [sorted_x[max(1, div(i*size(X)[1], n))] for i in 0:n]
+    return [sorted_X[max(1, div(i*size(X)[1], n))] for i in 0:n]
 end
 
 function ns_funcs(knots, intercept = false, omega = false)
@@ -77,6 +77,19 @@ function calc_omega(X)
         end
     end
     return omega
+end
+
+# Generates a smoothing spline for design X and data y using the given lambda. If M is not specified
+# knots are placed at all points in X, otherwise M knots are placed at the appropriate quantiles of X.
+# The fitted N and theta values are returned
+function smooth_spline(X, y, lambda, M=0)
+    knots = unique(sort(X))
+    if 0 < M
+        knots = quantiles(unique(X), M)
+    end
+    N = ns(X, knots, true)
+    omega = calc_omega(knots)
+    return N, (N'*N + lambda*omega)^-1*N'*y
 end
 
 end
