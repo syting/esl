@@ -29,9 +29,10 @@ def standardize_data(df, demeanCols=None, scaleCols=None):
 def read_prostate_data():
     """Reads the prostate data from file into a DataFrame
     """
-    return pandas.read_table(DATA_DIR + '/' + PROSTATE_DATA,
-                             delim_whitespace=True)
-
+    data_file = DATA_DIR + '/' + PROSTATE_DATA
+    df = pandas.read_table(data_file, delim_whitespace=True)
+    df.drop(u"row_names", axis=1, inplace=True)
+    return df
 
 def read_vowel_data(train=True):
     """Reads the vowel data from file into a DataFrame

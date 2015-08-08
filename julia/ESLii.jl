@@ -51,8 +51,11 @@ end
 
 function read_sa_heart_data()
     # Reads the south african heart data from file in a DataFrame
-    return load_data(DATA_DIR + "/" + SA_HEART_DATA, ',', true, :chd, false, [:row_names, :adiposity, :typea], [:famhist])
+    return load_data("$DATA_DIR/$SA_HEART_DATA", ',', true, :chd, false, [:row_names, :adiposity, :typea], [:famhist])
 end
 
+function read_bone_data()
+    return readtable("$DATA_DIR/$BONE_DATA", separator=' ', header=true) 
+end
 
 end

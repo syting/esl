@@ -1,5 +1,7 @@
 module Splines
 
+# Generates a cubic basis spline for X. If knots are not specified by the user they are
+# set to X
 function bs(X, knots = [], intercept = false)
     if isempty(knots)
         knots = X
@@ -40,6 +42,8 @@ function ns_funcs(knots, intercept = false, omega = false)
     return funcs
 end
 
+# Generates a natural cubic spline for X. If knots are not given then they are set at the unique
+# points in X
 function ns(X, knots = [], intercept = false)
     if isempty(knots)
         knots = unique(sort(X))
