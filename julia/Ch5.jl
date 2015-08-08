@@ -32,22 +32,16 @@ function figure_5_3()
                     Guide.xlabel("X"), Guide.ylabel("Pointwise Variance"))
 end
 
-# Generates n-quantiles of the data in X
-function quantiles(X, n)
-    sorted_x = sort(X)
-    return [sorted_x[max(1, div(i*size(X)[1], n))] for i in 0:n]
-end
-
 # Reproduces Figure 5.4 in ESLii displaying fitted natural-spline function for each term
 # in the final model of a loglinear fit to the South African heart disease data
 function figure_5_4()
     X, y = ESLii.read_sa_heart_data()
-    N1 = Splines.ns(X[:,1], quantiles(X[:,1], 4), false)
-    N2 = Splines.ns(X[:,2], quantiles(X[:,2], 4), false)
-    N3 = Splines.ns(X[:,3], quantiles(X[:,3], 4), false)
+    N1 = Splines.ns(X[:,1], Splines.quantiles(X[:,1], 4), false)
+    N2 = Splines.ns(X[:,2], Splines.quantiles(X[:,2], 4), false)
+    N3 = Splines.ns(X[:,3], Splines.quantiles(X[:,3], 4), false)
     N4 = X[:,4]
-    N5 = Splines.ns(X[:,5], quantiles(X[:,5], 4), false)
-    N7 = Splines.ns(X[:,7], quantiles(X[:,7], 4), false)
+    N5 = Splines.ns(X[:,5], Splines.quantiles(X[:,5], 4), false)
+    N7 = Splines.ns(X[:,7], Splines.quantiles(X[:,7], 4), false)
     N = [N1 N2 N3 N4 N5 N7]
     llc = fit(Classification.LogLinearClassifier, N, y)
 
@@ -119,11 +113,11 @@ function figure_5_6()
     male_bone = sort(bone[bone[:gender] .== "male", :], cols=:age)
     female_bone = sort(bone[bone[:gender] .== "female", :], cols=:age)
 
-    male_N = Splines.ns(male_bone[:age], quantiles(male_bone[:age], 12), true)
-    male_omega = Splines.calc_omega2(quantiles(male_bone[:age], 12))
+    male_N = Splines.ns(male_bone[:age], Splines.quantiles(male_bone[:age], 12), true)
+    male_omega = Splines.calc_omega(Splines.quantiles(male_bone[:age], 12))
     male_theta = (male_N'*male_N + .00022*male_omega)^-1*male_N'*male_bone[:spnbmd]
-    female_N = Splines.ns(female_bone[:age], quantiles(female_bone[:age], 12), true)
-    female_omega = Splines.calc_omega2(quantiles(female_bone[:age], 12))
+    female_N = Splines.ns(female_bone[:age], Splines.quantiles(female_bone[:age], 12), true)
+    female_omega = Splines.calc_omega(Splines.quantiles(female_bone[:age], 12))
     female_theta = (female_N'*female_N + .00022*female_omega)^-1*female_N'*female_bone[:spnbmd]
 
     #Gadfly.plot(layer(x=male_bone[:age], y=male_bone[:spnbmd], Geom.point, Theme(default_color=color("blue"))),
@@ -131,6 +125,15 @@ function figure_5_6()
     #layer(x=female_bone[:age], y=female_bone[:spnbmd], Geom.point, Theme(default_color=color("red"))),
     layer(x=female_bone[:age], y=female_N*female_theta, Geom.line, Theme(default_color=color("red"))),
     Guide.xlabel("Age"), Guide.ylabel("Relative Change in Spinal BMD"))
+end
+
+function figure_5_9()
+    X = rand(100)
+    f_X = sin(12(X + 0.2))./(X + 0.2)
+    y = f_X + randn(100)
+
+    Gadfly.plot(layer(x=X, y=y, Geom.point),
+                layer(x=X, y=f_X, Geom.line, Theme(default_color=color("purple"))))
 end
 
 end
