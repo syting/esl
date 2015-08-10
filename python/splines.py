@@ -22,7 +22,7 @@ def ns_basis(X, knots=None, intercept=False):
         i += 1
     D[:, i] = X
     i += 1
-    for j in range(p - 1):
-        D[:, i] = [dk(x, j) - dk(x, p - 1) for x in X]
+    for j in range(len(knots) - 2):
+        D[:, i] = [dk(x, j) - dk(x, len(knots) - 2) for x in X]
         i += 1
     return D
