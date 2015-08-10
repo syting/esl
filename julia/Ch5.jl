@@ -4,6 +4,7 @@ using Classification
 using DataFrames, DataFramesUtil
 using ESLii
 using Gadfly
+using Roots
 using Splines
 
 # Calculates the pointwise-variance of the design matrix X
@@ -113,29 +114,74 @@ function figure_5_6()
     male_bone = sort(bone[bone[:gender] .== "male", :], cols=:age)
     female_bone = sort(bone[bone[:gender] .== "female", :], cols=:age)
 
-    #male_N = Splines.ns(male_bone[:age], Splines.quantiles(male_bone[:age], 12), true)
-    #male_omega = Splines.calc_omega(Splines.quantiles(male_bone[:age], 12))
-    #male_theta = (male_N'*male_N + .00022*male_omega)^-1*male_N'*male_bone[:spnbmd]
-    #female_N = Splines.ns(female_bone[:age], Splines.quantiles(female_bone[:age], 12), true)
-    #female_omega = Splines.calc_omega(Splines.quantiles(female_bone[:age], 12))
-    #female_theta = (female_N'*female_N + .00022*female_omega)^-1*female_N'*female_bone[:spnbmd]
     male_N, male_theta = Splines.smooth_spline(male_bone[:age], male_bone[:spnbmd], .00022, 10)
     female_N, female_theta = Splines.smooth_spline(female_bone[:age], female_bone[:spnbmd], .00022, 10)
 
-    #Gadfly.plot(layer(x=male_bone[:age], y=male_bone[:spnbmd], Geom.point, Theme(default_color=color("blue"))),
     Gadfly.plot(layer(x=male_bone[:age], y=male_N*male_theta, Geom.line, Theme(default_color=color("blue"))),
-    #layer(x=female_bone[:age], y=female_bone[:spnbmd], Geom.point, Theme(default_color=color("red"))),
-    layer(x=female_bone[:age], y=female_N*female_theta, Geom.line, Theme(default_color=color("red"))),
-    Guide.xlabel("Age"), Guide.ylabel("Relative Change in Spinal BMD"))
+                layer(x=female_bone[:age], y=female_N*female_theta, Geom.line, Theme(default_color=color("red"))),
+                Guide.xlabel("Age"), Guide.ylabel("Relative Change in Spinal BMD"))
 end
 
+# Reproduces Figure 5.9 in ESLii showing how fit quality varies with df for a realization of a nonlinear additive
+# error model. Note that because this is a random realization the images will differ a bit from those in the text.
+# In particular the CV curve may lie above or below the EPE curve.
 function figure_5_9()
-    X = rand(100)
-    f_X = sin(12(X + 0.2))./(X + 0.2)
-    y = f_X + randn(100)
+    n = 100
 
-    Gadfly.plot(layer(x=X, y=y, Geom.point),
-                layer(x=X, y=f_X, Geom.line, Theme(default_color=color("purple"))))
+    X = rand(n)
+    f_X = sin(12(X + 0.2))./(X + 0.2)
+    y = f_X + randn(n)
+
+    # Find K from the Reinsch representation of S_lambda and use to generate a function representing
+    # df as a function of lambda
+    knots = unique(sort(X))
+    N = Splines.ns(X, knots, true)
+    omega = Splines.calc_omega(knots)
+    K = (N')^-1*omega*N^-1
+    dk = svd(K)[2]
+    df(lambda) = sum(1./(1 + lambda*dk))
+
+    # Calculate the lambdas corresponding to df = 5.0, 5.5, ..., 15.0 and use these to calculate the
+    # EPE and CV curves over that range
+    lambdas = [Roots.fzero(x -> df(x) - 5.0, 0, 1)]
+    S_lambda = (eye(length(knots)) + lambdas[end]*K)^-1
+    f_hat = S_lambda*y
+    epe = [1.0 + sum((f_X - f_hat).^2)/n]
+    cv = [1.0/n*sum([((y[j] - f_hat[j])/(1 - S_lambda[j, j]))^2 for j in 1:n])]
+    for l in 5.5:0.5:15.0
+        push!(lambdas, Roots.fzero(x -> df(x) - l, 0, lambdas[end]))
+        S_lambda = (eye(length(knots)) + lambdas[end]*K)^-1
+        f_hat = S_lambda*y
+        push!(epe, 1.0 + sum((f_X - f_hat).^2)/n)
+        push!(cv, 1.0/n*sum([((y[j] - f_hat[j])/(1 - S_lambda[j, j]))^2 for j in 1:n]))
+    end
+    p1 = Gadfly.plot(layer(x=5.0:0.5:15.0, y=epe, Geom.point, Theme(default_color=color("orange"))),
+                layer(x=5.0:0.5:15.0, y=cv, Geom.point, Theme(default_color=color("blue"))),
+                Guide.xlabel("df_lambda"), Guide.ylabel("EPE(lambda) and CV(lambda)"),
+                Guide.title("Cross-Validation"))
+
+    # Generate plots of the smoothing spline fit for df = 5, 9, and 15
+    p2 = Gadfly.plot(layer(x=X, y=y, Geom.point),
+                     layer(x=X, y=f_X, Geom.line, Theme(default_color=color("purple"))),
+                     layer(x=X, y=N*Splines.smooth_spline(X, y, lambdas[1])[2], Geom.line, Theme(default_color=color("green"))),
+                     Guide.title("df = 5"))
+    p3 = Gadfly.plot(layer(x=X, y=y, Geom.point),
+                     layer(x=X, y=f_X, Geom.line, Theme(default_color=color("purple"))),
+                     layer(x=X, y=N*Splines.smooth_spline(X, y, lambdas[9])[2], Geom.line, Theme(default_color=color("green"))),
+                     Guide.title("df = 9"))
+    p4 = Gadfly.plot(layer(x=X, y=y, Geom.point),
+                     layer(x=X, y=f_X, Geom.line, Theme(default_color=color("purple"))),
+                     layer(x=X, y=N*Splines.smooth_spline(X, y, lambdas[17])[2], Geom.line, Theme(default_color=color("green"))),
+                     Guide.title("df = 15"))
+    Gadfly.draw(SVG("Figure_5_9.svg", 6inch, 8inch), hstack(vstack(p1, p3), vstack(p2, p4)))
+end
+
+# TODO: Implement
+function figure_5_11()
+end
+
+# TODO: Implement
+function figure_5_12()
 end
 
 end
