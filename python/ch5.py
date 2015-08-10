@@ -8,6 +8,7 @@ import random
 import splines
 
 from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import LSQUnivariateSpline
 from sklearn.linear_model import LogisticRegression
 
 
@@ -19,7 +20,7 @@ def figure_5_3():
         cv = np.linalg.inv(np.dot(D.transpose(), D))
         return [np.dot(D[i, :].transpose(), np.dot(cv, D[i, :]))
                 for i in range(D.shape[0])]
-    n = 100
+    n = 50
     X = np.sort([random.random() for i in range(n)])
     l_X = np.ndarray((n, 2))
     l_X[:, 0] = np.ones(n)
@@ -76,17 +77,19 @@ def figure_5_4():
 
     lr = LogisticRegression(C=1e50).fit(N, y)
     N -= N.mean(axis=0)
-    # plt.scatter(X["sbp"], np.dot(N[:, 0:4], lr.coef_[0][0:4]))
-    # plt.scatter(X["tobacco"], np.dot(N[:, 4:8], lr.coef_[0][4:8]))
-    # plt.scatter(X["ldl"], np.dot(N[:, 8:12], lr.coef_[0][8:12]))
-    # plt.scatter(X["famhist"], np.dot(N[:, 12:13], lr.coef_[0][12:13]))
-    plt.scatter(X["obesity"], np.dot(N[:, 13:17], lr.coef_[0][13:17]))
-    # plt.scatter(X["age"], np.dot(N[:, 17:21], lr.coef_[0][17:21]))
 
+    fig = plt.figure()
+    fig.add_subplot(321).scatter(X["sbp"], np.dot(N[:, 0:4], lr.coef_[0][0:4]))
+    fig.add_subplot(322).scatter(X["tobacco"], np.dot(N[:, 4:8], lr.coef_[0][4:8]))
+    fig.add_subplot(323).scatter(X["ldl"], np.dot(N[:, 8:12], lr.coef_[0][8:12]))
+    fig.add_subplot(324).scatter(X["famhist"], np.dot(N[:, 12:13], lr.coef_[0][12:13]))
+    fig.add_subplot(325).scatter(X["obesity"], np.dot(N[:, 13:17], lr.coef_[0][13:17]))
+    fig.add_subplot(326).scatter(X["age"], np.dot(N[:, 17:21], lr.coef_[0][17:21]))
+    plt.show()
 
 def figure_5_5():
-    """Reproduces figure 5.4 in ESLii displaying the fitted natural spline for
-    each term
+    """Reproduces figure 5.5 in ESLii displaying the results of fitting a spline
+    to the phoneme classification result
     """
     phoneme = eslii.read_phoneme_data()
     aa = phoneme[phoneme['g'] == 'aa']
@@ -101,9 +104,10 @@ def figure_5_5():
     ao_test = ao_test.reset_index()
 
     # Print some examples of the data
-    # for i in range(15):
-    #    plt.plot(range(1, 257), aa_train.ix[i][1:257], c='green')
-    #    plt.plot(range(1, 257), ao_train.ix[i][1:257], c='red')
+    fit = plt.figure()
+    for i in range(15):
+        fit.add_subplot(211).plot(range(1, 257), aa_train.ix[i][1:257], c='green')
+        fit.add_subplot(211).plot(range(1, 257), ao_train.ix[i][1:257], c='red')
 
     # Separate out train and test data/labels
     train_X = np.concatenate((aa_train[aa_train.columns[1:257]],
@@ -128,8 +132,8 @@ def figure_5_5():
                                              1 - lr2.score(np.dot(test_X, N),
                                                            test_y))
 
-    plt.plot(range(1, 257), lr.coef_[0],
-             range(1, 257), np.dot(N, lr2.coef_[0]))
+    fit.add_subplot(212).plot(range(1, 257), lr.coef_[0],
+                              range(1, 257), np.dot(N, lr2.coef_[0]))
 
 
 def figure_5_6():
@@ -152,5 +156,13 @@ def figure_5_6():
 def figure_5_9():
     """Reproduces figure 5.9 in ESLii displaying EPE and CV curves for different
     realizations of fitting a spline to a nonlinear function
+    TODO: Finish implementation. Need to find or build methods for building
+    design matrix for natural cubic spline.
     """
-    pass
+    n = 100
+    X = np.sort([random.random() for i in range(n)])
+    f = [sin(12*(x + 0.2)/(x + 0.2)) for x in X]
+    y = [f_x + randn() for f_x in f]
+
+    # Find K from the Reinsch representation of S_lambda and use to generate
+
