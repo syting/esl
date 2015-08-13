@@ -153,4 +153,38 @@ function StatsBase.predict(mm::LogLinearClassifier, newX::Matrix)
     return [round(e^((padded_x[i,:]*mm.beta)[1])/(1 + e^((padded_x[i,:]*mm.beta)[1]))) for i in 1:n]
 end
 
+type WeightedLogLinearClassifier
+    beta::Vector
+end
+
+function StatsBase.fit(::Type{WeightedLogLinearClassifier}, X, y::Vector, D::Matrix)
+    n = size(y)[1]
+    p = length(size(X)) > 1 ? size(X)[2] : 1
+    n_cats = maximum(y)
+
+    padded_x = [ones(n) X]
+    beta = zeros(p + 1)
+    while true
+        P = [e^((padded_x[i,:]*beta)[1])/(1 + e^((padded_x[i,:]*beta)[1])) for i in 1:n]
+        W = diagm(P .* (1 - P))
+        beta_new = (padded_x'*D*W*padded_x)^-1 * padded_x' * D * W * (padded_x*beta + W^-1*(y - P))
+        if (((beta_new - beta)'*(beta_new - beta))[1] < .00001)
+            beta = beta_new
+            break
+        end
+        beta = beta_new
+    end
+    return WeightedLogLinearClassifier(beta)
+end
+
+function probability(mm::WeightedLogLinearClassifier, newX)
+    n = size(newX)[1]
+    padded_x = [ones(n) newX]
+    return convert(Vector{Float64}, [e^((padded_x[i,:]*mm.beta)[1])/(1 + e^((padded_x[i,:]*mm.beta)[1])) for i in 1:n])
+end
+
+function StatsBase.predict(mm::WeightedLogLinearClassifier, newX)
+    return round(probability(mm, newX))
+end
+
 end

@@ -1,20 +1,37 @@
 module LocalRegression
 
+using Classification
+using StatsBase
+
 function NWKernel(x0, X, y, K)
     sum([K(x0, x)*y for (x, y) in zip(X, y)])/sum([K(x0, x) for x in X])
 end
 
 function k_nearest(x0, x, X, k)
-    return (norm(x - x0) <= sort(norm(X - x0))[k]) ? 1.0 : 0.0
+    return (abs(x - x0) <= sort(abs(X - x0))[k]) ? 1.0 : 0.0
+end
+
+function k_nearest_width(x0, X, k)
+    return sort(abs(X - x0))[k]
 end
 
 function Epanechnikov(x0, x, l)
-    t = norm(x - x0)/l
+    if typeof(l) == Function
+        width = l(x0)
+    else
+        width = l
+    end
+    t = abs(x - x0)/width
     return (t <= 1.0) ? .75*(1 - t^2) : 0.0
 end
 
 function tri_cube_kernel(x0, x, l)
-    t = norm(x - x0)/l
+    if typeof(l) == Function
+        width = l(x0)
+    else
+        width = l
+    end
+    t = abs(x - x0)/width
     return (t <= 1.0) ? (1 - t^3)^3 : 0.0
 end
 
@@ -33,6 +50,18 @@ end
 function lwpr(x0, X, y, K, p)
     l = lwpr_l(x0, X, K, p)
     return (l*y)[1]
+end
+
+function lllr(x0, X, y, K)
+    # We need to drop unweighted examples before fitting
+    weights = convert(Vector{Float64}, [K(x0, x) for x in X])
+    used = (weights .!= 0.0)
+    return Classification.probability(fit(Classification.WeightedLogLinearClassifier, X[used], y[used], diagm(weights[used])), [x0])[1]
+end
+
+function parzen_kde(x0, X, K, lambda)
+    N = length(X)
+    return 1/(N*lambda)*sum([K(x0, x) for x in X])
 end
 
 function llda(x0, X, y, K)
